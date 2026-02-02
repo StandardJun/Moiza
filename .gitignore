@@ -44,10 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase
+# Firebase (native config files - keep firebase_options.dart for web builds)
 **/GoogleService-Info.plist
 **/google-services.json
-firebase_options.dart
 
 # Environment
 .env
