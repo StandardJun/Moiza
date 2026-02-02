@@ -1,1 +1,28 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"study-penalty","configurations":{"web":"1:928791623594:web:e9efd22e7fc372a5c0ddd3"}}}}}}
+{
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "study-penalty",
+          "configurations": {
+            "web": "1:928791623594:web:e9efd22e7fc372a5c0ddd3"
+          }
+        }
+      }
+    }
+  }
+}
