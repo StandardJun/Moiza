@@ -8,9 +8,11 @@ class AttendanceSession {
   final DateTime startedAt;
   final DateTime endsAt;
   final String verificationWord;
-  final int lateThresholdSeconds;
+  final int lateThresholdSeconds; // 정시 출석 임계 (초)
+  final int lateGracePeriodMinutes; // 출석 마감 후 지각 허용 시간 (분)
   final String startedBy;
   final List<String> checkedInUsers;
+  final Map<String, String> userStatuses; // userId -> status (present/late)
 
   AttendanceSession({
     required this.sessionId,
@@ -18,8 +20,10 @@ class AttendanceSession {
     required this.endsAt,
     required this.verificationWord,
     this.lateThresholdSeconds = 300, // 기본 5분
+    this.lateGracePeriodMinutes = 10, // 기본 10분 지각 유예
     required this.startedBy,
     this.checkedInUsers = const [],
+    this.userStatuses = const {},
   });
 
   factory AttendanceSession.fromMap(Map<String, dynamic> map) {
@@ -29,8 +33,10 @@ class AttendanceSession {
       endsAt: (map['endsAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       verificationWord: map['verificationWord'] ?? '',
       lateThresholdSeconds: map['lateThresholdSeconds'] ?? 300,
+      lateGracePeriodMinutes: map['lateGracePeriodMinutes'] ?? 10,
       startedBy: map['startedBy'] ?? '',
       checkedInUsers: List<String>.from(map['checkedInUsers'] ?? []),
+      userStatuses: Map<String, String>.from(map['userStatuses'] ?? {}),
     );
   }
 
@@ -41,13 +47,25 @@ class AttendanceSession {
       'endsAt': Timestamp.fromDate(endsAt),
       'verificationWord': verificationWord,
       'lateThresholdSeconds': lateThresholdSeconds,
+      'lateGracePeriodMinutes': lateGracePeriodMinutes,
       'startedBy': startedBy,
       'checkedInUsers': checkedInUsers,
+      'userStatuses': userStatuses,
     };
   }
 
   bool get isActive => DateTime.now().isBefore(endsAt);
   bool get isLateNow => DateTime.now().isAfter(startedAt.add(Duration(seconds: lateThresholdSeconds)));
+
+  // 지각 유예 기간 내인지 확인 (마감 후 ~ 마감 + 지각유예시간)
+  bool get isInLateGracePeriod {
+    final now = DateTime.now();
+    final gracePeriodEnd = endsAt.add(Duration(minutes: lateGracePeriodMinutes));
+    return now.isAfter(endsAt) && now.isBefore(gracePeriodEnd);
+  }
+
+  // 지각 유예 기간 종료 시간
+  DateTime get lateGracePeriodEndsAt => endsAt.add(Duration(minutes: lateGracePeriodMinutes));
 
   // 랜덤 한글 단어 생성 (3-4글자)
   static String generateVerificationWord() {
@@ -71,6 +89,7 @@ class AttendanceSession {
 class AttendanceModel {
   final String id;
   final String studyGroupId;
+  final String sessionId; // 출석 세션 ID
   final String userId;
   final String status; // present, late, absent
   final DateTime date;
@@ -80,6 +99,7 @@ class AttendanceModel {
   AttendanceModel({
     required this.id,
     required this.studyGroupId,
+    this.sessionId = '',
     required this.userId,
     required this.status,
     required this.date,
@@ -92,6 +112,7 @@ class AttendanceModel {
     return AttendanceModel(
       id: doc.id,
       studyGroupId: data['studyGroupId'] ?? '',
+      sessionId: data['sessionId'] ?? '',
       userId: data['userId'] ?? '',
       status: data['status'] ?? AttendanceStatus.absent,
       date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -103,6 +124,7 @@ class AttendanceModel {
   Map<String, dynamic> toFirestore() {
     return {
       'studyGroupId': studyGroupId,
+      'sessionId': sessionId,
       'userId': userId,
       'status': status,
       'date': Timestamp.fromDate(date),

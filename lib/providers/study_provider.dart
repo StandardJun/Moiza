@@ -277,13 +277,59 @@ class StudyProvider extends ChangeNotifier {
     }
   }
 
-  // 출석 세션 종료
-  Future<bool> endAttendanceSession(String studyGroupId) async {
+  // 출석 마감 (기록 저장 + 미출석자 결석 처리)
+  Future<bool> finishAttendanceSession(String studyGroupId) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
     try {
-      await _studyService.endAttendanceSession(studyGroupId);
+      await _studyService.finishAttendanceSession(studyGroupId);
+      _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
       _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 출석 취소 (기록 없이 세션만 삭제)
+  Future<bool> cancelAttendanceSession(String studyGroupId) async {
+    try {
+      await _studyService.cancelAttendanceSession(studyGroupId);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 지각 체크인 (마감 후 지각 유예 기간 내)
+  Future<bool> lateCheckIn({
+    required String studyGroupId,
+    required String userId,
+    required String word,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _studyService.lateCheckIn(
+        studyGroupId: studyGroupId,
+        userId: userId,
+        word: word,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
       notifyListeners();
       return false;
     }

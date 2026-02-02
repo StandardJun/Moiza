@@ -23,6 +23,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
   final _latePenaltyController = TextEditingController(text: '1000');
   final _absentPenaltyController = TextEditingController(text: '3000');
   final _taskPenaltyController = TextEditingController(text: '2000');
+  final _lateGraceController = TextEditingController(text: '10');
   bool _noTask = false;
 
   @override
@@ -33,6 +34,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
     _latePenaltyController.dispose();
     _absentPenaltyController.dispose();
     _taskPenaltyController.dispose();
+    _lateGraceController.dispose();
     super.dispose();
   }
 
@@ -48,6 +50,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
       latePenalty: int.tryParse(_latePenaltyController.text) ?? 1000,
       absentPenalty: int.tryParse(_absentPenaltyController.text) ?? 3000,
       taskNotDonePenalty: _noTask ? 0 : (int.tryParse(_taskPenaltyController.text) ?? 2000),
+      lateGracePeriodMinutes: int.tryParse(_lateGraceController.text) ?? 10,
     );
 
     final study = await studyProvider.createStudyGroup(
@@ -249,6 +252,37 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
                       label: '과제 미제출 벌금',
                       icon: Icons.assignment_late,
                       enabled: !_noTask,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // 지각 유예 시간
+                    const Text(
+                      '지각 유예 설정',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '출석 마감 후 지각 체크인을 허용하는 시간입니다',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _lateGraceController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: '지각 유예 시간',
+                        prefixIcon: Icon(Icons.timer),
+                        suffixText: '분',
+                        helperText: '0 입력 시 지각 체크인 불가',
+                      ),
                     ),
                     const SizedBox(height: 32),
 

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:moiza/config/constants.dart';
 
-class AdService {
+class AdService extends ChangeNotifier {
   static final AdService _instance = AdService._internal();
   factory AdService() => _instance;
   AdService._internal();
@@ -41,6 +41,8 @@ class AdService {
 
   // 배너 광고 로드
   void loadBannerAd() {
+    if (kIsWeb) return;
+
     _bannerAd = BannerAd(
       adUnitId: AppConstants.bannerAdUnitId,
       size: AdSize.banner,
@@ -49,11 +51,13 @@ class AdService {
         onAdLoaded: (ad) {
           _isBannerAdLoaded = true;
           debugPrint('배너 광고 로드됨');
+          notifyListeners(); // 상태 변화 알림
         },
         onAdFailedToLoad: (ad, error) {
           _isBannerAdLoaded = false;
           ad.dispose();
           debugPrint('배너 광고 로드 실패: ${error.message}');
+          notifyListeners();
           // 5초 후 재시도
           Future.delayed(const Duration(seconds: 5), loadBannerAd);
         },
@@ -64,6 +68,8 @@ class AdService {
 
   // 전면 광고 로드
   void loadInterstitialAd() {
+    if (kIsWeb) return;
+
     InterstitialAd.load(
       adUnitId: AppConstants.interstitialAdUnitId,
       request: const AdRequest(),
@@ -72,16 +78,19 @@ class AdService {
           _interstitialAd = ad;
           _isInterstitialAdLoaded = true;
           debugPrint('전면 광고 로드됨');
+          notifyListeners();
 
           ad.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
               _isInterstitialAdLoaded = false;
+              notifyListeners();
               loadInterstitialAd(); // 다음 광고 미리 로드
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
               ad.dispose();
               _isInterstitialAdLoaded = false;
+              notifyListeners();
               loadInterstitialAd();
             },
           );
@@ -89,6 +98,7 @@ class AdService {
         onAdFailedToLoad: (error) {
           _isInterstitialAdLoaded = false;
           debugPrint('전면 광고 로드 실패: ${error.message}');
+          notifyListeners();
           Future.delayed(const Duration(seconds: 5), loadInterstitialAd);
         },
       ),
@@ -97,6 +107,8 @@ class AdService {
 
   // 리워드 광고 로드
   void loadRewardedAd() {
+    if (kIsWeb) return;
+
     RewardedAd.load(
       adUnitId: AppConstants.rewardedAdUnitId,
       request: const AdRequest(),
@@ -105,10 +117,12 @@ class AdService {
           _rewardedAd = ad;
           _isRewardedAdLoaded = true;
           debugPrint('리워드 광고 로드됨');
+          notifyListeners();
         },
         onAdFailedToLoad: (error) {
           _isRewardedAdLoaded = false;
           debugPrint('리워드 광고 로드 실패: ${error.message}');
+          notifyListeners();
           Future.delayed(const Duration(seconds: 5), loadRewardedAd);
         },
       ),
@@ -117,17 +131,24 @@ class AdService {
 
   // 전면 광고 표시 (출석 체크 후)
   Future<void> showInterstitialAd({VoidCallback? onAdClosed}) async {
+    if (kIsWeb) {
+      onAdClosed?.call();
+      return;
+    }
+
     if (_isInterstitialAdLoaded && _interstitialAd != null) {
       _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdDismissedFullScreenContent: (ad) {
           ad.dispose();
           _isInterstitialAdLoaded = false;
+          notifyListeners();
           loadInterstitialAd();
           onAdClosed?.call();
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
           ad.dispose();
           _isInterstitialAdLoaded = false;
+          notifyListeners();
           loadInterstitialAd();
           onAdClosed?.call();
         },
@@ -143,17 +164,24 @@ class AdService {
     required Function(int amount) onRewarded,
     VoidCallback? onAdClosed,
   }) async {
+    if (kIsWeb) {
+      onAdClosed?.call();
+      return;
+    }
+
     if (_isRewardedAdLoaded && _rewardedAd != null) {
       _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdDismissedFullScreenContent: (ad) {
           ad.dispose();
           _isRewardedAdLoaded = false;
+          notifyListeners();
           loadRewardedAd();
           onAdClosed?.call();
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
           ad.dispose();
           _isRewardedAdLoaded = false;
+          notifyListeners();
           loadRewardedAd();
           onAdClosed?.call();
         },
@@ -169,9 +197,11 @@ class AdService {
   }
 
   // 정리
+  @override
   void dispose() {
     _bannerAd?.dispose();
     _interstitialAd?.dispose();
     _rewardedAd?.dispose();
+    super.dispose();
   }
 }

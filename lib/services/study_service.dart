@@ -253,6 +253,17 @@ class StudyService {
     required int durationMinutes,
     int lateThresholdSeconds = 300,
   }) async {
+    // 스터디 그룹에서 지각 유예 시간 가져오기
+    final studyDoc = await _firestore
+        .collection(AppConstants.studyGroupsCollection)
+        .doc(studyGroupId)
+        .get();
+
+    if (!studyDoc.exists) throw '스터디를 찾을 수 없습니다.';
+
+    final study = StudyGroupModel.fromFirestore(studyDoc);
+    final lateGracePeriodMinutes = study.penaltyRule.lateGracePeriodMinutes;
+
     final now = DateTime.now();
     final session = AttendanceSession(
       sessionId: _uuid.v4(),
@@ -260,8 +271,10 @@ class StudyService {
       endsAt: now.add(Duration(minutes: durationMinutes)),
       verificationWord: AttendanceSession.generateVerificationWord(),
       lateThresholdSeconds: lateThresholdSeconds,
+      lateGracePeriodMinutes: lateGracePeriodMinutes,
       startedBy: startedBy,
       checkedInUsers: [startedBy], // 시작한 사람 자동 출석
+      userStatuses: {startedBy: AttendanceStatus.present}, // 시작한 사람은 정시 출석
     );
 
     await _firestore
@@ -301,8 +314,79 @@ class StudyService {
     });
   }
 
-  // 출석 세션 종료
-  Future<void> endAttendanceSession(String studyGroupId) async {
+  // 출석 마감 - 출석 기록을 DB에 저장하고 미출석자는 결석 처리
+  Future<void> finishAttendanceSession(String studyGroupId) async {
+    final doc = await _firestore
+        .collection(AppConstants.studyGroupsCollection)
+        .doc(studyGroupId)
+        .get();
+
+    if (!doc.exists) throw '스터디를 찾을 수 없습니다.';
+
+    final study = StudyGroupModel.fromFirestore(doc);
+    final session = study.activeAttendanceSession;
+
+    if (session == null) throw '진행 중인 출석이 없습니다.';
+
+    final now = DateTime.now();
+    final dateOnly = DateTime(now.year, now.month, now.day);
+    final batch = _firestore.batch();
+
+    // 모든 멤버에 대해 출석 기록 생성
+    for (final memberId in study.memberIds) {
+      final isCheckedIn = session.checkedInUsers.contains(memberId);
+      final userStatus = session.userStatuses[memberId];
+
+      String status;
+      if (isCheckedIn) {
+        status = userStatus ?? AttendanceStatus.present;
+      } else {
+        // 지각 유예 기간 내 체크인 가능하도록 pending 상태로 두지 않고
+        // 마감 시점에서 미출석이면 일단 absent로 기록 (나중에 지각 체크인 가능)
+        status = AttendanceStatus.absent;
+      }
+
+      final attendanceDocRef = _firestore.collection(AppConstants.attendancesCollection).doc();
+      final attendance = AttendanceModel(
+        id: attendanceDocRef.id,
+        studyGroupId: studyGroupId,
+        sessionId: session.sessionId,
+        userId: memberId,
+        status: status,
+        date: dateOnly,
+        checkInTime: isCheckedIn ? session.startedAt : null,
+      );
+
+      batch.set(attendanceDocRef, attendance.toFirestore());
+
+      // 지각/결석인 경우 벌금 생성
+      if (status == AttendanceStatus.late || status == AttendanceStatus.absent) {
+        final penaltyDocRef = _firestore.collection(AppConstants.penaltiesCollection).doc();
+        batch.set(penaltyDocRef, {
+          'studyGroupId': studyGroupId,
+          'userId': memberId,
+          'type': status == AttendanceStatus.late ? PenaltyType.late : PenaltyType.absent,
+          'amount': status == AttendanceStatus.late
+              ? study.penaltyRule.latePenalty
+              : study.penaltyRule.absentPenalty,
+          'date': Timestamp.fromDate(dateOnly),
+          'isPaid': false,
+          'sessionId': session.sessionId,
+        });
+      }
+    }
+
+    // 세션 정보를 finishedAttendanceSession으로 이동 (지각 체크인용)
+    batch.update(doc.reference, {
+      'activeAttendanceSession': FieldValue.delete(),
+      'lastFinishedSession': session.toMap(),
+    });
+
+    await batch.commit();
+  }
+
+  // 출석 취소 - 세션만 삭제 (출석 기록 없이)
+  Future<void> cancelAttendanceSession(String studyGroupId) async {
     await _firestore
         .collection(AppConstants.studyGroupsCollection)
         .doc(studyGroupId)
@@ -311,7 +395,83 @@ class StudyService {
     });
   }
 
-  // 출석 체크 (단어 인증)
+  // 지각 체크인 (마감 후 지각 유예 기간 내)
+  Future<void> lateCheckIn({
+    required String studyGroupId,
+    required String userId,
+    required String word,
+  }) async {
+    final doc = await _firestore
+        .collection(AppConstants.studyGroupsCollection)
+        .doc(studyGroupId)
+        .get();
+
+    if (!doc.exists) throw '스터디를 찾을 수 없습니다.';
+
+    final data = doc.data() as Map<String, dynamic>;
+    final lastSessionData = data['lastFinishedSession'];
+
+    if (lastSessionData == null) throw '최근 마감된 출석이 없습니다.';
+
+    final lastSession = AttendanceSession.fromMap(lastSessionData);
+
+    // 지각 유예 기간 확인
+    final now = DateTime.now();
+    if (now.isAfter(lastSession.lateGracePeriodEndsAt)) {
+      throw '지각 체크인 시간이 지났습니다.';
+    }
+
+    // 단어 확인
+    if (word != lastSession.verificationWord) {
+      throw '인증 단어가 일치하지 않습니다.';
+    }
+
+    // 해당 사용자의 출석 기록 찾기
+    final attendanceQuery = await _firestore
+        .collection(AppConstants.attendancesCollection)
+        .where('studyGroupId', isEqualTo: studyGroupId)
+        .where('sessionId', isEqualTo: lastSession.sessionId)
+        .where('userId', isEqualTo: userId)
+        .limit(1)
+        .get();
+
+    if (attendanceQuery.docs.isEmpty) {
+      throw '출석 기록을 찾을 수 없습니다.';
+    }
+
+    final attendanceDoc = attendanceQuery.docs.first;
+    final currentStatus = attendanceDoc.data()['status'];
+
+    if (currentStatus != AttendanceStatus.absent) {
+      throw '이미 출석 처리되었습니다.';
+    }
+
+    // 결석 -> 지각으로 변경
+    await attendanceDoc.reference.update({
+      'status': AttendanceStatus.late,
+      'checkInTime': Timestamp.fromDate(now),
+    });
+
+    // 결석 벌금 -> 지각 벌금으로 변경
+    final study = StudyGroupModel.fromFirestore(doc);
+    final penaltyQuery = await _firestore
+        .collection(AppConstants.penaltiesCollection)
+        .where('studyGroupId', isEqualTo: studyGroupId)
+        .where('sessionId', isEqualTo: lastSession.sessionId)
+        .where('userId', isEqualTo: userId)
+        .where('type', isEqualTo: PenaltyType.absent)
+        .limit(1)
+        .get();
+
+    if (penaltyQuery.docs.isNotEmpty) {
+      await penaltyQuery.docs.first.reference.update({
+        'type': PenaltyType.late,
+        'amount': study.penaltyRule.latePenalty,
+      });
+    }
+  }
+
+  // 출석 체크 (단어 인증) - 출석 진행 중일 때
   Future<String> checkInWithWord({
     required String studyGroupId,
     required String userId,
@@ -335,12 +495,13 @@ class StudyService {
     // 출석 상태 결정 (지각 여부)
     final status = session.isLateNow ? AttendanceStatus.late : AttendanceStatus.present;
 
-    // 출석 기록 저장
+    // 세션에 출석 기록 저장
     await _firestore
         .collection(AppConstants.studyGroupsCollection)
         .doc(studyGroupId)
         .update({
       'activeAttendanceSession.checkedInUsers': FieldValue.arrayUnion([userId]),
+      'activeAttendanceSession.userStatuses.$userId': status,
     });
 
     return status;

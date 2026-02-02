@@ -5,11 +5,13 @@ class PenaltyRule {
   final int latePenalty;
   final int absentPenalty;
   final int taskNotDonePenalty;
+  final int lateGracePeriodMinutes; // 출석 마감 후 지각 유예 시간 (분)
 
   PenaltyRule({
     this.latePenalty = 1000,
     this.absentPenalty = 3000,
     this.taskNotDonePenalty = 2000,
+    this.lateGracePeriodMinutes = 10, // 기본 10분
   });
 
   factory PenaltyRule.fromMap(Map<String, dynamic> map) {
@@ -17,6 +19,7 @@ class PenaltyRule {
       latePenalty: map['latePenalty'] ?? 1000,
       absentPenalty: map['absentPenalty'] ?? 3000,
       taskNotDonePenalty: map['taskNotDonePenalty'] ?? 2000,
+      lateGracePeriodMinutes: map['lateGracePeriodMinutes'] ?? 10,
     );
   }
 
@@ -25,6 +28,7 @@ class PenaltyRule {
       'latePenalty': latePenalty,
       'absentPenalty': absentPenalty,
       'taskNotDonePenalty': taskNotDonePenalty,
+      'lateGracePeriodMinutes': lateGracePeriodMinutes,
     };
   }
 }
@@ -76,6 +80,7 @@ class StudyGroupModel {
   final DateTime createdAt;
   final DateTime? nextMeetingAt;
   final AttendanceSession? activeAttendanceSession;
+  final AttendanceSession? lastFinishedSession; // 지각 체크인용
 
   StudyGroupModel({
     required this.id,
@@ -91,6 +96,7 @@ class StudyGroupModel {
     required this.createdAt,
     this.nextMeetingAt,
     this.activeAttendanceSession,
+    this.lastFinishedSession,
   });
 
   factory StudyGroupModel.fromFirestore(DocumentSnapshot doc) {
@@ -114,6 +120,9 @@ class StudyGroupModel {
       activeAttendanceSession: data['activeAttendanceSession'] != null
           ? AttendanceSession.fromMap(data['activeAttendanceSession'])
           : null,
+      lastFinishedSession: data['lastFinishedSession'] != null
+          ? AttendanceSession.fromMap(data['lastFinishedSession'])
+          : null,
     );
   }
 
@@ -131,6 +140,7 @@ class StudyGroupModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'nextMeetingAt': nextMeetingAt != null ? Timestamp.fromDate(nextMeetingAt!) : null,
       'activeAttendanceSession': activeAttendanceSession?.toMap(),
+      'lastFinishedSession': lastFinishedSession?.toMap(),
     };
   }
 
@@ -148,6 +158,7 @@ class StudyGroupModel {
     DateTime? createdAt,
     DateTime? nextMeetingAt,
     AttendanceSession? activeAttendanceSession,
+    AttendanceSession? lastFinishedSession,
   }) {
     return StudyGroupModel(
       id: id ?? this.id,
@@ -163,6 +174,7 @@ class StudyGroupModel {
       createdAt: createdAt ?? this.createdAt,
       nextMeetingAt: nextMeetingAt ?? this.nextMeetingAt,
       activeAttendanceSession: activeAttendanceSession ?? this.activeAttendanceSession,
+      lastFinishedSession: lastFinishedSession ?? this.lastFinishedSession,
     );
   }
 

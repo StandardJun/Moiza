@@ -76,9 +76,129 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     }
   }
 
-  Future<void> _endAttendanceSession() async {
+  Future<void> _finishAttendanceSession() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('출석 마감'),
+        content: const Text('출석을 마감하시겠습니까?\n미출석자는 결석 처리됩니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('마감', style: TextStyle(color: AppTheme.errorColor)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final studyProvider = context.read<StudyProvider>();
+      final success = await studyProvider.finishAttendanceSession(widget.studyGroupId);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('출석이 마감되었습니다. 출석 기록이 저장되었습니다.'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        // 출석 기록 새로고침
+        final authProvider = context.read<AuthProvider>();
+        if (authProvider.user != null) {
+          context.read<AttendanceProvider>().loadUserAttendance(
+            studyGroupId: widget.studyGroupId,
+            userId: authProvider.user!.id,
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _cancelAttendanceSession() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('출석 취소'),
+        content: const Text('출석을 취소하시겠습니까?\n출석 기록이 저장되지 않습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('아니오'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('취소하기', style: TextStyle(color: AppTheme.errorColor)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final studyProvider = context.read<StudyProvider>();
+      final success = await studyProvider.cancelAttendanceSession(widget.studyGroupId);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('출석이 취소되었습니다.'),
+            backgroundColor: AppTheme.warningColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _lateCheckIn() async {
+    final word = _wordController.text.trim();
+    if (word.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('인증 단어를 입력해주세요'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
     final studyProvider = context.read<StudyProvider>();
-    await studyProvider.endAttendanceSession(widget.studyGroupId);
+
+    if (authProvider.user == null) return;
+
+    final success = await studyProvider.lateCheckIn(
+      studyGroupId: widget.studyGroupId,
+      userId: authProvider.user!.id,
+      word: word,
+    );
+
+    if (success && mounted) {
+      _wordController.clear();
+      _adService.showInterstitialAd(
+        onAdClosed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('지각 처리되었습니다'),
+              backgroundColor: AppTheme.warningColor,
+            ),
+          );
+          // 출석 기록 새로고침
+          context.read<AttendanceProvider>().loadUserAttendance(
+            studyGroupId: widget.studyGroupId,
+            userId: authProvider.user!.id,
+          );
+        },
+      );
+    } else if (studyProvider.error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(studyProvider.error!),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      studyProvider.clearError();
+    }
   }
 
   void _showExtendDialog() {
@@ -237,12 +357,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       // 출석 세션 상태에 따른 UI
                       if (session != null && session.isActive) ...[
                         // 활성 세션이 있을 때
+                        final isSessionStarter = session.startedBy == userId;
                         _ActiveSessionCard(
                           session: session,
-                          isAdmin: isAdmin,
+                          isSessionStarter: isSessionStarter,
                           hasCheckedIn: hasCheckedIn,
                           formatRemainingTime: _formatRemainingTime,
-                          onEndSession: _endAttendanceSession,
+                          onFinishSession: _finishAttendanceSession,
+                          onCancelSession: _cancelAttendanceSession,
                           onExtendSession: _showExtendDialog,
                         ),
                         const SizedBox(height: 16),
@@ -258,19 +380,35 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                             onCheckIn: _checkIn,
                           ),
                         ],
-                      ] else if (isAdmin) ...[
-                        // 관리자: 출석 시작 UI
-                        _StartSessionCard(
-                          selectedDuration: _selectedDuration,
-                          onDurationChanged: (value) {
-                            setState(() => _selectedDuration = value);
-                          },
-                          isLoading: studyProvider.isLoading,
-                          onStart: _startAttendanceSession,
-                        ),
                       ] else ...[
-                        // 일반 멤버: 세션 없음
-                        _NoSessionCard(),
+                        // 지각 유예 기간 체크
+                        final lastSession = study?.lastFinishedSession;
+                        final isInLateGracePeriod = lastSession != null && lastSession.isInLateGracePeriod;
+                        final alreadyCheckedIn = lastSession?.checkedInUsers.contains(userId) ?? false;
+
+                        if (isInLateGracePeriod && !alreadyCheckedIn) ...[
+                          // 지각 유예 기간 내 - 지각 체크인 가능
+                          _LateCheckInCard(
+                            lastSession: lastSession!,
+                            controller: _wordController,
+                            isLoading: studyProvider.isLoading,
+                            onLateCheckIn: _lateCheckIn,
+                            formatRemainingTime: _formatRemainingTime,
+                          ),
+                        ] else if (isAdmin) ...[
+                          // 관리자: 출석 시작 UI
+                          _StartSessionCard(
+                            selectedDuration: _selectedDuration,
+                            onDurationChanged: (value) {
+                              setState(() => _selectedDuration = value);
+                            },
+                            isLoading: studyProvider.isLoading,
+                            onStart: _startAttendanceSession,
+                          ),
+                        ] else ...[
+                          // 일반 멤버: 세션 없음
+                          _NoSessionCard(),
+                        ],
                       ],
 
                       const SizedBox(height: 32),
@@ -329,18 +467,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
 class _ActiveSessionCard extends StatelessWidget {
   final dynamic session;
-  final bool isAdmin;
+  final bool isSessionStarter; // 출석 시작한 사람인지
   final bool hasCheckedIn;
   final String Function(DateTime) formatRemainingTime;
-  final VoidCallback onEndSession;
+  final VoidCallback onFinishSession;
+  final VoidCallback onCancelSession;
   final VoidCallback onExtendSession;
 
   const _ActiveSessionCard({
     required this.session,
-    required this.isAdmin,
+    required this.isSessionStarter,
     required this.hasCheckedIn,
     required this.formatRemainingTime,
-    required this.onEndSession,
+    required this.onFinishSession,
+    required this.onCancelSession,
     required this.onExtendSession,
   });
 
@@ -391,7 +531,8 @@ class _ActiveSessionCard extends StatelessWidget {
                 color: AppTheme.textSecondary,
               ),
             ),
-            if (isAdmin) ...[
+            // 출석 시작한 사람만 인증 단어를 볼 수 있음
+            if (isSessionStarter) ...[
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -402,7 +543,7 @@ class _ActiveSessionCard extends StatelessWidget {
                 child: Column(
                   children: [
                     const Text(
-                      '인증 단어',
+                      '인증 단어 (시작자만 볼 수 있음)',
                       style: TextStyle(
                         fontSize: 12,
                         color: AppTheme.textSecondary,
@@ -421,26 +562,41 @@ class _ActiveSessionCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              // 시간 연장 버튼
+              OutlinedButton.icon(
+                onPressed: onExtendSession,
+                icon: const Icon(Icons.add_alarm),
+                label: const Text('시간 연장'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                  side: const BorderSide(color: AppTheme.primaryColor),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // 출석 마감 / 취소 버튼
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  OutlinedButton.icon(
-                    onPressed: onExtendSession,
-                    icon: const Icon(Icons.add_alarm),
-                    label: const Text('시간 연장'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryColor,
-                      side: const BorderSide(color: AppTheme.primaryColor),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onFinishSession,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.successColor,
+                        side: const BorderSide(color: AppTheme.successColor),
+                      ),
+                      child: const Text('출석 마감'),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  OutlinedButton(
-                    onPressed: onEndSession,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.errorColor,
-                      side: const BorderSide(color: AppTheme.errorColor),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onCancelSession,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.errorColor,
+                        side: const BorderSide(color: AppTheme.errorColor),
+                      ),
+                      child: const Text('출석 취소'),
                     ),
-                    child: const Text('출석 종료'),
                   ),
                 ],
               ),
@@ -637,6 +793,110 @@ class _NoSessionCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LateCheckInCard extends StatelessWidget {
+  final dynamic lastSession;
+  final TextEditingController controller;
+  final bool isLoading;
+  final VoidCallback onLateCheckIn;
+  final String Function(DateTime) formatRemainingTime;
+
+  const _LateCheckInCard({
+    required this.lastSession,
+    required this.controller,
+    required this.isLoading,
+    required this.onLateCheckIn,
+    required this.formatRemainingTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppTheme.warningColor.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.access_time,
+                  color: AppTheme.warningColor,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  '지각 체크인 가능',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.warningColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '남은 시간: ${formatRemainingTime(lastSession.lateGracePeriodEndsAt)}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '출석 마감 후 지각 유예 시간입니다.\n인증 단어를 입력하면 지각 처리됩니다.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: const InputDecoration(
+                hintText: '인증 단어 입력',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : onLateCheckIn,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.warningColor,
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        '지각 체크인',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ],

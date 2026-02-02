@@ -556,6 +556,9 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
     final taskController = TextEditingController(
       text: study.penaltyRule.taskNotDonePenalty.toString(),
     );
+    final lateGraceController = TextEditingController(
+      text: study.penaltyRule.lateGracePeriodMinutes.toString(),
+    );
 
     showDialog(
       context: context,
@@ -592,6 +595,16 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
                   helperText: '0 입력 시 과제 벌금 없음',
                 ),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: lateGraceController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: '지각 유예 시간 (분)',
+                  prefixIcon: Icon(Icons.timer),
+                  helperText: '출석 마감 후 지각 체크인 허용 시간',
+                ),
+              ),
             ],
           ),
         ),
@@ -610,6 +623,7 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
                 latePenalty: int.tryParse(lateController.text) ?? 1000,
                 absentPenalty: int.tryParse(absentController.text) ?? 3000,
                 taskNotDonePenalty: int.tryParse(taskController.text) ?? 0,
+                lateGracePeriodMinutes: int.tryParse(lateGraceController.text) ?? 10,
               );
 
               final success = await studyProvider.updatePenaltyRule(

@@ -17,6 +17,25 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   final AdService _adService = AdService();
 
   @override
+  void initState() {
+    super.initState();
+    // AdService 상태 변화 감지
+    _adService.addListener(_onAdServiceChanged);
+  }
+
+  @override
+  void dispose() {
+    _adService.removeListener(_onAdServiceChanged);
+    super.dispose();
+  }
+
+  void _onAdServiceChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // 웹에서는 AdSense 플레이스홀더 표시
     if (kIsWeb) {
@@ -59,7 +78,37 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   // 모바일용 AdMob 배너
   Widget _buildMobileAdBanner() {
     if (!_adService.isBannerAdLoaded || _adService.bannerAd == null) {
-      return const SizedBox(height: 50);
+      // 광고 로딩 중 플레이스홀더 표시
+      return Container(
+        alignment: Alignment.center,
+        height: 50,
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '광고 로딩 중...',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     return Container(
