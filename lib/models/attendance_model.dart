@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:study_penalty/config/constants.dart';
+import 'package:moiza/config/constants.dart';
 
 // 출석 세션 모델 (방장/관리자가 시작하는 출석 체크)
 class AttendanceSession {

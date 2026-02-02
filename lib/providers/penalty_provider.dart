@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:study_penalty/models/penalty_model.dart';
-import 'package:study_penalty/models/user_model.dart';
-import 'package:study_penalty/services/penalty_service.dart';
+import 'package:moiza/models/penalty_model.dart';
+import 'package:moiza/models/user_model.dart';
+import 'package:moiza/services/penalty_service.dart';
 
 class PenaltyProvider extends ChangeNotifier {
   final PenaltyService _penaltyService = PenaltyService();

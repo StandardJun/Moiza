@@ -1,5 +1,5 @@
-name: study_penalty
-description: "스터디 벌금 관리 앱 - 출석 체크와 벌금 자동 계산"
+name: moiza
+description: "모이자(Moiza) - 스터디 출석 체크와 벌금 자동 계산 앱"
 publish_to: 'none'
 
 version: 1.0.0+1

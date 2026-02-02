@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:study_penalty/config/constants.dart';
+import 'package:moiza/config/constants.dart';
 
 class AdService {
   static final AdService _instance = AdService._internal();

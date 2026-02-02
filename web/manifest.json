@@ -1,11 +1,11 @@
 {
-    "name": "study_penalty",
-    "short_name": "study_penalty",
+    "name": "모이자 - Moiza",
+    "short_name": "모이자",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "스터디 출석 체크와 벌금 자동 계산 앱",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

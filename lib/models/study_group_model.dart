@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:study_penalty/models/attendance_model.dart';
+import 'package:moiza/models/attendance_model.dart';
 
 class PenaltyRule {
   final int latePenalty;

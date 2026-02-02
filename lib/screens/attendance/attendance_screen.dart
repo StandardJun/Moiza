@@ -1,14 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:study_penalty/config/constants.dart';
-import 'package:study_penalty/config/theme.dart';
-import 'package:study_penalty/providers/auth_provider.dart';
-import 'package:study_penalty/providers/attendance_provider.dart';
-import 'package:study_penalty/providers/study_provider.dart';
-import 'package:study_penalty/services/ad_service.dart';
-import 'package:study_penalty/widgets/common/banner_ad_widget.dart';
-import 'package:study_penalty/widgets/common/loading_widget.dart';
+import 'package:moiza/config/constants.dart';
+import 'package:moiza/config/theme.dart';
+import 'package:moiza/providers/auth_provider.dart';
+import 'package:moiza/providers/attendance_provider.dart';
+import 'package:moiza/providers/study_provider.dart';
+import 'package:moiza/services/ad_service.dart';
+import 'package:moiza/widgets/common/banner_ad_widget.dart';
+import 'package:moiza/widgets/common/loading_widget.dart';
 import 'package:intl/intl.dart';
 
 class AttendanceScreen extends StatefulWidget {

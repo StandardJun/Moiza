@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:study_penalty/config/theme.dart';
-import 'package:study_penalty/providers/study_provider.dart';
-import 'package:study_penalty/providers/penalty_provider.dart';
-import 'package:study_penalty/models/penalty_model.dart';
-import 'package:study_penalty/services/penalty_service.dart';
-import 'package:study_penalty/widgets/common/banner_ad_widget.dart';
-import 'package:study_penalty/widgets/common/loading_widget.dart';
+import 'package:moiza/config/theme.dart';
+import 'package:moiza/providers/study_provider.dart';
+import 'package:moiza/providers/penalty_provider.dart';
+import 'package:moiza/models/penalty_model.dart';
+import 'package:moiza/services/penalty_service.dart';
+import 'package:moiza/widgets/common/banner_ad_widget.dart';
+import 'package:moiza/widgets/common/loading_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 

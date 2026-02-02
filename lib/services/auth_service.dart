@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:study_penalty/config/constants.dart';
-import 'package:study_penalty/models/user_model.dart';
+import 'package:moiza/config/constants.dart';
+import 'package:moiza/models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;

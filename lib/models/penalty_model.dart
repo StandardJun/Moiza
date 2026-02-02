@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:study_penalty/config/constants.dart';
+import 'package:moiza/config/constants.dart';
 
 class PenaltyModel {
   final String id;

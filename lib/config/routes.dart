@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:study_penalty/providers/auth_provider.dart';
-import 'package:study_penalty/screens/auth/login_screen.dart';
-import 'package:study_penalty/screens/auth/signup_screen.dart';
-import 'package:study_penalty/screens/home/home_screen.dart';
-import 'package:study_penalty/screens/study/create_study_screen.dart';
-import 'package:study_penalty/screens/study/join_study_screen.dart';
-import 'package:study_penalty/screens/study/study_detail_screen.dart';
-import 'package:study_penalty/screens/attendance/attendance_screen.dart';
-import 'package:study_penalty/screens/penalty/penalty_report_screen.dart';
+import 'package:moiza/providers/auth_provider.dart';
+import 'package:moiza/screens/auth/login_screen.dart';
+import 'package:moiza/screens/auth/signup_screen.dart';
+import 'package:moiza/screens/home/home_screen.dart';
+import 'package:moiza/screens/study/create_study_screen.dart';
+import 'package:moiza/screens/study/join_study_screen.dart';
+import 'package:moiza/screens/study/study_detail_screen.dart';
+import 'package:moiza/screens/attendance/attendance_screen.dart';
+import 'package:moiza/screens/penalty/penalty_report_screen.dart';
 
 class AppRoutes {
   static const String login = '/login';

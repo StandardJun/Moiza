@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:study_penalty/config/theme.dart';
-import 'package:study_penalty/models/study_group_model.dart';
-import 'package:study_penalty/providers/auth_provider.dart';
-import 'package:study_penalty/providers/study_provider.dart';
-import 'package:study_penalty/providers/penalty_provider.dart';
-import 'package:study_penalty/widgets/common/banner_ad_widget.dart';
-import 'package:study_penalty/widgets/common/loading_widget.dart';
+import 'package:moiza/config/theme.dart';
+import 'package:moiza/models/study_group_model.dart';
+import 'package:moiza/providers/auth_provider.dart';
+import 'package:moiza/providers/study_provider.dart';
+import 'package:moiza/providers/penalty_provider.dart';
+import 'package:moiza/widgets/common/banner_ad_widget.dart';
+import 'package:moiza/widgets/common/loading_widget.dart';
 import 'package:intl/intl.dart';
 
 class StudyDetailScreen extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:study_penalty/models/attendance_model.dart';
-import 'package:study_penalty/services/attendance_service.dart';
+import 'package:moiza/models/attendance_model.dart';
+import 'package:moiza/services/attendance_service.dart';
 
 class AttendanceProvider extends ChangeNotifier {
   final AttendanceService _attendanceService = AttendanceService();

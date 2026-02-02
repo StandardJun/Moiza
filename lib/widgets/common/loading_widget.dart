@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:study_penalty/config/theme.dart';
+import 'package:moiza/config/theme.dart';
 
 class LoadingWidget extends StatelessWidget {
   final String? message;

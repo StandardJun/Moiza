@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:study_penalty/models/study_group_model.dart';
-import 'package:study_penalty/models/user_model.dart';
-import 'package:study_penalty/models/attendance_model.dart';
-import 'package:study_penalty/services/study_service.dart';
+import 'package:moiza/models/study_group_model.dart';
+import 'package:moiza/models/user_model.dart';
+import 'package:moiza/models/attendance_model.dart';
+import 'package:moiza/services/study_service.dart';
 
 class StudyProvider extends ChangeNotifier {
   final StudyService _studyService = StudyService();

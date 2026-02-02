@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
-import 'package:study_penalty/config/constants.dart';
-import 'package:study_penalty/models/study_group_model.dart';
-import 'package:study_penalty/models/user_model.dart';
-import 'package:study_penalty/models/attendance_model.dart';
+import 'package:moiza/config/constants.dart';
+import 'package:moiza/models/study_group_model.dart';
+import 'package:moiza/models/user_model.dart';
+import 'package:moiza/models/attendance_model.dart';
 
 class StudyService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
