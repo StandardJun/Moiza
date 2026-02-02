@@ -42,7 +42,7 @@ class _JoinStudyScreenState extends State<JoinStudyScreen> {
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('스터디에 참여했습니다!'),
+          content: Text('모임에 참여했습니다!'),
           backgroundColor: AppTheme.successColor,
         ),
       );
@@ -62,7 +62,7 @@ class _JoinStudyScreenState extends State<JoinStudyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('스터디 참여'),
+        title: const Text('모임 참여'),
       ),
       body: Consumer<StudyProvider>(
         builder: (context, studyProvider, child) {
@@ -93,7 +93,7 @@ class _JoinStudyScreenState extends State<JoinStudyScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      '스터디 관리자에게 받은 초대 코드를 입력하세요',
+                      '모임 관리자에게 받은 초대 코드를 입력하세요',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -133,7 +133,7 @@ class _JoinStudyScreenState extends State<JoinStudyScreen> {
                       textAlign: TextAlign.center,
                       decoration: const InputDecoration(
                         labelText: '닉네임',
-                        hintText: '스터디에서 사용할 닉네임',
+                        hintText: '모임에서 사용할 닉네임',
                         prefixIcon: Icon(Icons.badge_outlined),
                       ),
                       validator: (value) {

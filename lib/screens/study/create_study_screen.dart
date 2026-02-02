@@ -79,7 +79,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('스터디 생성 완료!'),
+        title: const Text('모임 생성 완료!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -135,7 +135,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('새 스터디 만들기'),
+        title: const Text('새 모임 만들기'),
       ),
       body: Consumer<StudyProvider>(
         builder: (context, studyProvider, child) {
@@ -152,13 +152,13 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
-                        labelText: '스터디 이름',
+                        labelText: '모임 이름',
                         hintText: '예: 알고리즘 스터디',
                         prefixIcon: Icon(Icons.groups),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return '스터디 이름을 입력해주세요';
+                          return '모임 이름을 입력해주세요';
                         }
                         return null;
                       },
@@ -171,7 +171,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
                       maxLines: 3,
                       decoration: const InputDecoration(
                         labelText: '설명 (선택)',
-                        hintText: '스터디에 대한 간단한 설명',
+                        hintText: '모임에 대한 간단한 설명',
                         prefixIcon: Icon(Icons.description),
                         alignLabelWithHint: true,
                       ),
@@ -183,7 +183,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
                       controller: _nicknameController,
                       decoration: const InputDecoration(
                         labelText: '내 닉네임',
-                        hintText: '이 스터디에서 사용할 닉네임',
+                        hintText: '이 모임에서 사용할 닉네임',
                         prefixIcon: Icon(Icons.badge_outlined),
                       ),
                       validator: (value) {
@@ -290,7 +290,7 @@ class _CreateStudyScreenState extends State<CreateStudyScreen> {
                     ElevatedButton(
                       onPressed: _handleCreate,
                       child: const Text(
-                        '스터디 생성',
+                        '모임 생성',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

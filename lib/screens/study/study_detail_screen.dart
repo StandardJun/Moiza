@@ -46,7 +46,7 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
       appBar: AppBar(
         title: Consumer<StudyProvider>(
           builder: (context, provider, _) {
-            return Text(provider.selectedStudyGroup?.name ?? '스터디');
+            return Text(provider.selectedStudyGroup?.name ?? '모임');
           },
         ),
         actions: [
@@ -372,7 +372,7 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
           controller: controller,
           decoration: const InputDecoration(
             labelText: '닉네임',
-            hintText: '스터디에서 사용할 닉네임',
+            hintText: '모임에서 사용할 닉네임',
           ),
           autofocus: true,
         ),
@@ -422,8 +422,8 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('스터디 나가기'),
-        content: const Text('정말 이 스터디를 나가시겠습니까?'),
+        title: const Text('모임 나가기'),
+        content: const Text('정말 이 모임을 나가시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

@@ -65,7 +65,7 @@ class StudyService {
     final studyGroup = StudyGroupModel.fromFirestore(doc);
 
     if (studyGroup.memberIds.contains(userId)) {
-      throw '이미 참여 중인 스터디입니다.';
+      throw '이미 참여 중인 모임입니다.';
     }
 
     // 스터디 그룹에 멤버 및 닉네임 추가
@@ -259,7 +259,7 @@ class StudyService {
         .doc(studyGroupId)
         .get();
 
-    if (!studyDoc.exists) throw '스터디를 찾을 수 없습니다.';
+    if (!studyDoc.exists) throw '모임을 찾을 수 없습니다.';
 
     final study = StudyGroupModel.fromFirestore(studyDoc);
     final lateGracePeriodMinutes = study.penaltyRule.lateGracePeriodMinutes;
@@ -297,7 +297,7 @@ class StudyService {
         .doc(studyGroupId)
         .get();
 
-    if (!doc.exists) throw '스터디를 찾을 수 없습니다.';
+    if (!doc.exists) throw '모임을 찾을 수 없습니다.';
 
     final study = StudyGroupModel.fromFirestore(doc);
     final session = study.activeAttendanceSession;
@@ -321,7 +321,7 @@ class StudyService {
         .doc(studyGroupId)
         .get();
 
-    if (!doc.exists) throw '스터디를 찾을 수 없습니다.';
+    if (!doc.exists) throw '모임을 찾을 수 없습니다.';
 
     final study = StudyGroupModel.fromFirestore(doc);
     final session = study.activeAttendanceSession;
@@ -406,7 +406,7 @@ class StudyService {
         .doc(studyGroupId)
         .get();
 
-    if (!doc.exists) throw '스터디를 찾을 수 없습니다.';
+    if (!doc.exists) throw '모임을 찾을 수 없습니다.';
 
     final data = doc.data() as Map<String, dynamic>;
     final lastSessionData = data['lastFinishedSession'];
@@ -482,7 +482,7 @@ class StudyService {
         .doc(studyGroupId)
         .get();
 
-    if (!doc.exists) throw '스터디를 찾을 수 없습니다.';
+    if (!doc.exists) throw '모임을 찾을 수 없습니다.';
 
     final study = StudyGroupModel.fromFirestore(doc);
     final session = study.activeAttendanceSession;

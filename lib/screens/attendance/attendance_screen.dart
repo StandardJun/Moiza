@@ -355,61 +355,66 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       const SizedBox(height: 24),
 
                       // 출석 세션 상태에 따른 UI
-                      if (session != null && session.isActive) ...[
-                        // 활성 세션이 있을 때
-                        final isSessionStarter = session.startedBy == userId;
-                        _ActiveSessionCard(
-                          session: session,
-                          isSessionStarter: isSessionStarter,
-                          hasCheckedIn: hasCheckedIn,
-                          formatRemainingTime: _formatRemainingTime,
-                          onFinishSession: _finishAttendanceSession,
-                          onCancelSession: _cancelAttendanceSession,
-                          onExtendSession: _showExtendDialog,
-                        ),
-                        const SizedBox(height: 16),
+                      Builder(
+                        builder: (context) {
+                          if (session != null && session.isActive) {
+                            // 활성 세션이 있을 때
+                            final isSessionStarter = session.startedBy == userId;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _ActiveSessionCard(
+                                  session: session,
+                                  isSessionStarter: isSessionStarter,
+                                  hasCheckedIn: hasCheckedIn,
+                                  formatRemainingTime: _formatRemainingTime,
+                                  onFinishSession: _finishAttendanceSession,
+                                  onCancelSession: _cancelAttendanceSession,
+                                  onExtendSession: _showExtendDialog,
+                                ),
+                                const SizedBox(height: 16),
+                                if (hasCheckedIn)
+                                  _CheckedInCard()
+                                else
+                                  _CheckInCard(
+                                    controller: _wordController,
+                                    isLoading: studyProvider.isLoading,
+                                    onCheckIn: _checkIn,
+                                  ),
+                              ],
+                            );
+                          } else {
+                            // 지각 유예 기간 체크
+                            final lastSession = study?.lastFinishedSession;
+                            final isInLateGracePeriod = lastSession != null && lastSession.isInLateGracePeriod;
+                            final alreadyCheckedIn = lastSession?.checkedInUsers.contains(userId) ?? false;
 
-                        if (hasCheckedIn) ...[
-                          // 이미 출석한 경우
-                          _CheckedInCard(),
-                        ] else ...[
-                          // 출석 체크 입력
-                          _CheckInCard(
-                            controller: _wordController,
-                            isLoading: studyProvider.isLoading,
-                            onCheckIn: _checkIn,
-                          ),
-                        ],
-                      ] else ...[
-                        // 지각 유예 기간 체크
-                        final lastSession = study?.lastFinishedSession;
-                        final isInLateGracePeriod = lastSession != null && lastSession.isInLateGracePeriod;
-                        final alreadyCheckedIn = lastSession?.checkedInUsers.contains(userId) ?? false;
-
-                        if (isInLateGracePeriod && !alreadyCheckedIn) ...[
-                          // 지각 유예 기간 내 - 지각 체크인 가능
-                          _LateCheckInCard(
-                            lastSession: lastSession!,
-                            controller: _wordController,
-                            isLoading: studyProvider.isLoading,
-                            onLateCheckIn: _lateCheckIn,
-                            formatRemainingTime: _formatRemainingTime,
-                          ),
-                        ] else if (isAdmin) ...[
-                          // 관리자: 출석 시작 UI
-                          _StartSessionCard(
-                            selectedDuration: _selectedDuration,
-                            onDurationChanged: (value) {
-                              setState(() => _selectedDuration = value);
-                            },
-                            isLoading: studyProvider.isLoading,
-                            onStart: _startAttendanceSession,
-                          ),
-                        ] else ...[
-                          // 일반 멤버: 세션 없음
-                          _NoSessionCard(),
-                        ],
-                      ],
+                            if (isInLateGracePeriod && !alreadyCheckedIn) {
+                              // 지각 유예 기간 내 - 지각 체크인 가능
+                              return _LateCheckInCard(
+                                lastSession: lastSession!,
+                                controller: _wordController,
+                                isLoading: studyProvider.isLoading,
+                                onLateCheckIn: _lateCheckIn,
+                                formatRemainingTime: _formatRemainingTime,
+                              );
+                            } else if (isAdmin) {
+                              // 관리자: 출석 시작 UI
+                              return _StartSessionCard(
+                                selectedDuration: _selectedDuration,
+                                onDurationChanged: (value) {
+                                  setState(() => _selectedDuration = value);
+                                },
+                                isLoading: studyProvider.isLoading,
+                                onStart: _startAttendanceSession,
+                              );
+                            } else {
+                              // 일반 멤버: 세션 없음
+                              return _NoSessionCard();
+                            }
+                          }
+                        },
+                      ),
 
                       const SizedBox(height: 32),
 

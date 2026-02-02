@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('내 스터디'),
+        title: const Text('내 모임'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            '참여 중인 스터디가 없습니다',
+            '참여 중인 모임이 없습니다',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey.shade600,
@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '새 스터디를 만들거나 초대 코드로 참여하세요',
+            '새 모임을 만들거나 초대 코드로 참여하세요',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade500,

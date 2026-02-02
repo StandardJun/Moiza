@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        '스터디 출석 체크와 벌금 관리를 한 번에',
+                        '모임 출석 체크와 벌금 관리를 한 번에',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,

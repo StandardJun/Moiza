@@ -1,6 +1,6 @@
 class AppConstants {
   // App Info
-  static const String appName = '스터디 벌금';
+  static const String appName = '모이자';
   static const String appVersion = '1.0.0';
 
   // AdMob IDs (Test IDs - 배포 시 실제 ID로 교체 필요)
