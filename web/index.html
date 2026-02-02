@@ -31,6 +31,31 @@
 
   <title>모이자 - Moiza</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Google AdSense -->
+  <!-- TODO: Replace ca-pub-XXXXXXXXXXXXXXXX with your AdSense Publisher ID -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+     crossorigin="anonymous"></script>
+  <style>
+    .adsense-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 50px;
+      background-color: #f5f5f5;
+    }
+    .adsense-ad {
+      display: block;
+      width: 320px;
+      height: 50px;
+    }
+    @media (min-width: 728px) {
+      .adsense-ad {
+        width: 728px;
+        height: 90px;
+      }
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
