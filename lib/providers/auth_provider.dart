@@ -31,7 +31,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> signUp({
-    required String email,
+    required String username,
     required String password,
     required String displayName,
   }) async {
@@ -40,8 +40,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _user = await _authService.signUpWithEmail(
-        email: email,
+      _user = await _authService.signUp(
+        username: username,
         password: password,
         displayName: displayName,
       );
@@ -57,7 +57,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> signIn({
-    required String email,
+    required String username,
     required String password,
   }) async {
     _isLoading = true;
@@ -65,8 +65,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _user = await _authService.signInWithEmail(
-        email: email,
+      _user = await _authService.signIn(
+        username: username,
         password: password,
       );
       _isLoading = false;

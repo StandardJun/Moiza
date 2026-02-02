@@ -16,7 +16,7 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -25,7 +25,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -36,7 +36,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.signUp(
-      email: _emailController.text.trim(),
+      username: _usernameController.text.trim(),
       password: _passwordController.text,
       displayName: _nameController.text.trim(),
     );
@@ -79,7 +79,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         controller: _nameController,
                         decoration: const InputDecoration(
                           labelText: '이름',
-                          prefixIcon: Icon(Icons.person_outlined),
+                          prefixIcon: Icon(Icons.badge_outlined),
+                          hintText: '앱에서 표시될 이름',
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -90,20 +91,28 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 이메일 입력
+                      // 아이디 입력
                       TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
+                        controller: _usernameController,
+                        keyboardType: TextInputType.text,
+                        autocorrect: false,
                         decoration: const InputDecoration(
-                          labelText: '이메일',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          labelText: '아이디',
+                          prefixIcon: Icon(Icons.person_outlined),
+                          hintText: '영문, 숫자, 밑줄(_) 4자 이상',
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return '이메일을 입력해주세요';
+                            return '아이디를 입력해주세요';
                           }
-                          if (!value.contains('@')) {
-                            return '유효한 이메일 형식이 아닙니다';
+                          if (value.length < 4) {
+                            return '아이디는 4자 이상이어야 합니다';
+                          }
+                          if (value.length > 20) {
+                            return '아이디는 20자 이하여야 합니다';
+                          }
+                          if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                            return '영문, 숫자, 밑줄(_)만 사용 가능합니다';
                           }
                           return null;
                         },
@@ -117,6 +126,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         decoration: InputDecoration(
                           labelText: '비밀번호',
                           prefixIcon: const Icon(Icons.lock_outlined),
+                          hintText: '6자 이상',
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword

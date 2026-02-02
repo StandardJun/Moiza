@@ -15,13 +15,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.signIn(
-      email: _emailController.text.trim(),
+      username: _usernameController.text.trim(),
       password: _passwordController.text,
     );
 
@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        '스터디 벌금',
+                        '모이자',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 28,
@@ -82,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        '출석 체크와 벌금 관리를 한 번에',
+                        '스터디 출석 체크와 벌금 관리를 한 번에',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -91,20 +91,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 48),
 
-                      // 이메일 입력
+                      // 아이디 입력
                       TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
+                        controller: _usernameController,
+                        keyboardType: TextInputType.text,
+                        autocorrect: false,
                         decoration: const InputDecoration(
-                          labelText: '이메일',
-                          prefixIcon: Icon(Icons.email_outlined),
+                          labelText: '아이디',
+                          prefixIcon: Icon(Icons.person_outlined),
+                          hintText: '영문, 숫자 조합',
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return '이메일을 입력해주세요';
+                            return '아이디를 입력해주세요';
                           }
-                          if (!value.contains('@')) {
-                            return '유효한 이메일 형식이 아닙니다';
+                          if (value.length < 4) {
+                            return '아이디는 4자 이상이어야 합니다';
+                          }
+                          if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                            return '영문, 숫자, 밑줄(_)만 사용 가능합니다';
                           }
                           return null;
                         },

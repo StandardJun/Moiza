@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
   final String id;
-  final String email;
+  final String username;
   final String displayName;
   final String? photoUrl;
   final DateTime createdAt;
@@ -10,7 +10,7 @@ class UserModel {
 
   UserModel({
     required this.id,
-    required this.email,
+    required this.username,
     required this.displayName,
     this.photoUrl,
     required this.createdAt,
@@ -21,7 +21,7 @@ class UserModel {
     final data = doc.data() as Map<String, dynamic>;
     return UserModel(
       id: doc.id,
-      email: data['email'] ?? '',
+      username: data['username'] ?? data['email'] ?? '',
       displayName: data['displayName'] ?? '',
       photoUrl: data['photoUrl'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -31,7 +31,7 @@ class UserModel {
 
   Map<String, dynamic> toFirestore() {
     return {
-      'email': email,
+      'username': username,
       'displayName': displayName,
       'photoUrl': photoUrl,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -41,7 +41,7 @@ class UserModel {
 
   UserModel copyWith({
     String? id,
-    String? email,
+    String? username,
     String? displayName,
     String? photoUrl,
     DateTime? createdAt,
@@ -49,7 +49,7 @@ class UserModel {
   }) {
     return UserModel(
       id: id ?? this.id,
-      email: email ?? this.email,
+      username: username ?? this.username,
       displayName: displayName ?? this.displayName,
       photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt ?? this.createdAt,

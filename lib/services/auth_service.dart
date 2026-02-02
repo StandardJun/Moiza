@@ -10,21 +10,40 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  Future<UserModel?> signUpWithEmail({
-    required String email,
+  // 아이디를 내부 이메일 형식으로 변환 (Firebase Auth는 이메일 기반)
+  String _usernameToEmail(String username) => '${username.toLowerCase()}@moiza.app';
+
+  // 아이디 중복 확인
+  Future<bool> isUsernameAvailable(String username) async {
+    final query = await _firestore
+        .collection(AppConstants.usersCollection)
+        .where('username', isEqualTo: username.toLowerCase())
+        .limit(1)
+        .get();
+    return query.docs.isEmpty;
+  }
+
+  Future<UserModel?> signUp({
+    required String username,
     required String password,
     required String displayName,
   }) async {
     try {
+      // 아이디 중복 확인
+      if (!await isUsernameAvailable(username)) {
+        throw '이미 사용 중인 아이디입니다.';
+      }
+
+      final internalEmail = _usernameToEmail(username);
       final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
+        email: internalEmail,
         password: password,
       );
 
       if (credential.user != null) {
         final userModel = UserModel(
           id: credential.user!.uid,
-          email: email,
+          username: username.toLowerCase(),
           displayName: displayName,
           createdAt: DateTime.now(),
         );
@@ -40,17 +59,19 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e.code);
     } catch (e) {
+      if (e is String) rethrow;
       throw '회원가입 중 오류가 발생했습니다: $e';
     }
   }
 
-  Future<UserModel?> signInWithEmail({
-    required String email,
+  Future<UserModel?> signIn({
+    required String username,
     required String password,
   }) async {
     try {
+      final internalEmail = _usernameToEmail(username);
       final credential = await _auth.signInWithEmailAndPassword(
-        email: email,
+        email: internalEmail,
         password: password,
       );
 
@@ -93,15 +114,15 @@ class AuthService {
       case 'weak-password':
         return '비밀번호가 너무 약합니다. (6자 이상)';
       case 'email-already-in-use':
-        return '이미 사용 중인 이메일입니다.';
+        return '이미 사용 중인 아이디입니다.';
       case 'invalid-email':
-        return '유효하지 않은 이메일 형식입니다.';
+        return '유효하지 않은 아이디 형식입니다.';
       case 'user-not-found':
-        return '존재하지 않는 계정입니다.';
+        return '존재하지 않는 아이디입니다.';
       case 'wrong-password':
         return '비밀번호가 틀렸습니다.';
       case 'invalid-credential':
-        return '이메일 또는 비밀번호가 올바르지 않습니다.';
+        return '아이디 또는 비밀번호가 올바르지 않습니다.';
       case 'user-disabled':
         return '비활성화된 계정입니다.';
       case 'too-many-requests':
