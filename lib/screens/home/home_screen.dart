@@ -29,6 +29,82 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _showAddOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.textTertiary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.add_circle_outline,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                title: const Text(
+                  '새 모임 만들기',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('새로운 모임을 만들고 멤버를 초대하세요'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push(AppRoutes.createStudy);
+                },
+              ),
+              const Divider(height: 1, indent: 72, endIndent: 16),
+              ListTile(
+                leading: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.successColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.group_add_outlined,
+                    color: AppTheme.successColor,
+                  ),
+                ),
+                title: const Text(
+                  '초대 코드로 참여',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                subtitle: const Text('받은 초대 코드를 입력하여 모임에 참여하세요'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push(AppRoutes.joinStudy);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
@@ -126,30 +202,12 @@ class _HomeScreenState extends State<HomeScreen> {
           const BannerAdWidget(),
         ],
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Join button
-          FloatingActionButton.small(
-            heroTag: 'join',
-            onPressed: () => context.push(AppRoutes.joinStudy),
-            backgroundColor: AppTheme.surfaceColor,
-            foregroundColor: AppTheme.primaryColor,
-            elevation: 2,
-            child: const Icon(Icons.group_add_outlined),
-          ),
-          const SizedBox(height: 12),
-          // Create button
-          FloatingActionButton.extended(
-            heroTag: 'create',
-            onPressed: () => context.push(AppRoutes.createStudy),
-            backgroundColor: AppTheme.primaryColor,
-            foregroundColor: Colors.white,
-            elevation: 2,
-            icon: const Icon(Icons.add),
-            label: const Text('새 모임'),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddOptions(context),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -219,7 +277,9 @@ class _StudyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasActiveSession = study.activeAttendanceSession != null;
+    // 출석 세션이 존재하고 아직 활성 상태(시간이 지나지 않음)인 경우에만 '출석 중' 표시
+    final hasActiveSession = study.activeAttendanceSession != null &&
+        study.activeAttendanceSession!.isActive;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

@@ -91,8 +91,20 @@ class PenaltyProvider extends ChangeNotifier {
 
   Future<void> markAsPaid(String penaltyId) async {
     try {
+      // Optimistic update: 로컬 상태를 먼저 업데이트하여 즉시 UI 반영
+      final index = _penalties.indexWhere((p) => p.id == penaltyId);
+      if (index != -1) {
+        _penalties[index] = _penalties[index].copyWith(isPaid: true);
+        notifyListeners();
+      }
+
       await _penaltyService.markAsPaid(penaltyId);
     } catch (e) {
+      // 오류 발생 시 원래 상태로 되돌리기
+      final index = _penalties.indexWhere((p) => p.id == penaltyId);
+      if (index != -1) {
+        _penalties[index] = _penalties[index].copyWith(isPaid: false);
+      }
       _error = e.toString();
       notifyListeners();
     }
