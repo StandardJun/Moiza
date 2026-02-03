@@ -4,7 +4,7 @@
 모임 출석 체크와 벌금 자동 계산 앱
 - 수익 모델: 광고 기반 (모바일: AdMob, 웹: AdSense)
 
-## 현재 상태: 출석 시스템 고도화 완료
+## 현재 상태: Cloudflare Pages 배포 완료 ✅
 
 ---
 
@@ -76,6 +76,16 @@
 - **지각 유예 시간 설정** (신규)
 - 수정 로그 기록 및 조회
 
+### 9. 리브랜딩: 스터디 → 모임 ✅ (2026-02-03)
+- 앱 확장성을 위해 "스터디"를 "모임"으로 변경
+- 변경된 UI 텍스트:
+  - `내 스터디` → `내 모임`
+  - `스터디 참여` → `모임 참여`
+  - `스터디 생성` → `모임 생성`
+  - `스터디 나가기` → `모임 나가기`
+- 에러 메시지, 앱 설명, manifest.json, index.html 등 전체 업데이트
+- Cloudflare Pages 빌드 에러 수정 (spread operator 내 final 선언 문제)
+
 ---
 
 ## 프로젝트 구조
@@ -142,10 +152,11 @@ lib/
 
 ## 남은 작업
 
-### 배포 완료 후
-- [ ] Cloudflare 배포 URL 확인
-- [ ] AdSense Publisher ID 설정 (`web/index.html`)
+### 광고 설정
+- [ ] AdSense Publisher ID 설정 (`web/index.html`에서 `ca-pub-XXXXXXXXXXXXXXXX` 교체)
 - [ ] AdMob 실제 광고 단위 ID 설정 (`lib/config/constants.dart`)
+
+### 보안 및 커스터마이징
 - [ ] Firestore 보안 규칙 강화
 - [ ] 앱 아이콘/스플래시 커스터마이징
 
