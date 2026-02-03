@@ -6,7 +6,6 @@ import 'package:moiza/providers/study_provider.dart';
 import 'package:moiza/providers/penalty_provider.dart';
 import 'package:moiza/models/penalty_model.dart';
 import 'package:moiza/services/penalty_service.dart';
-import 'package:moiza/widgets/common/banner_ad_widget.dart';
 import 'package:moiza/widgets/common/loading_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
@@ -87,7 +86,6 @@ class _PenaltyReportScreenState extends State<PenaltyReportScreen>
               ],
             ),
           ),
-          const BannerAdWidget(),
         ],
       ),
     );

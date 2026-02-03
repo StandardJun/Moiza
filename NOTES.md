@@ -119,6 +119,17 @@
   - Pull-to-refresh 추가로 결석→지각 업데이트 즉시 확인 가능
   - 납부 처리 버튼: 관리자/방장만 표시 (일반 멤버는 숨김)
 
+### 12. 광고 기능 임시 비활성화 ✅ (2026-02-04)
+- **광고 완전 제거** (추후 연동 시 복원 예정)
+  - `google_mobile_ads` 패키지 주석 처리 (pubspec.yaml)
+  - `AdService` → no-op 플레이스홀더로 변경
+  - 모든 화면에서 `BannerAdWidget` 제거
+    - home_screen.dart
+    - penalty_report_screen.dart
+    - attendance_screen.dart
+    - study_detail_screen.dart
+  - `banner_ad_widget.dart` 파일은 유지 (추후 사용)
+
 ---
 
 ## 프로젝트 구조
@@ -213,6 +224,39 @@ flutter run            # 모바일
 ---
 
 ## 비즈니스 모델
-- 무료 앱 (광고 기반)
-- 배너 광고: 하단 상시 노출
-- 전면 광고: 출석 체크 완료 후
+- 무료 앱 (광고 기반 - 현재 비활성화)
+- 배너 광고: 하단 상시 노출 (추후)
+- 전면 광고: 출석 체크 완료 후 (추후)
+
+---
+
+## 배포 정보
+
+### 웹 배포 (Cloudflare Pages) - 자동 배포
+- GitHub push 시 자동 빌드 및 배포
+- URL: Cloudflare Pages에서 확인
+
+### 배포 방법
+```bash
+# 1. 변경사항 커밋
+git add .
+git commit -m "변경 내용"
+
+# 2. GitHub push → Cloudflare 자동 배포
+git push origin main
+```
+
+### 앱스토어 배포 비용
+| 플랫폼 | 비용 | 비고 |
+|--------|------|------|
+| Google Play Store | $25 (일회성) | 약 35,000원 |
+| Apple App Store | $99/년 | 약 130,000원 |
+
+### Firebase 무료 한도 (Spark Plan)
+- Firestore: 50,000 읽기/일, 20,000 쓰기/일
+- 예상 수용: 일일 활성 사용자 100~200명
+
+---
+
+## 작업 규칙
+- **수정 후 즉시 배포**: 코드 수정 완료 시 바로 git push하여 배포 진행

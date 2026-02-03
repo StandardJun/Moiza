@@ -7,7 +7,6 @@ import 'package:moiza/models/study_group_model.dart';
 import 'package:moiza/providers/auth_provider.dart';
 import 'package:moiza/providers/study_provider.dart';
 import 'package:moiza/providers/penalty_provider.dart';
-import 'package:moiza/widgets/common/banner_ad_widget.dart';
 import 'package:moiza/widgets/common/loading_widget.dart';
 import 'package:intl/intl.dart';
 
@@ -292,7 +291,6 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
                   ),
                 ),
               ),
-              const BannerAdWidget(),
             ],
           );
         },
