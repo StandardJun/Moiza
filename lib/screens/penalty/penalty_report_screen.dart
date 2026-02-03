@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:moiza/config/theme.dart';
+import 'package:moiza/providers/auth_provider.dart';
 import 'package:moiza/providers/study_provider.dart';
 import 'package:moiza/providers/penalty_provider.dart';
 import 'package:moiza/models/penalty_model.dart';
@@ -32,12 +33,12 @@ class _PenaltyReportScreenState extends State<PenaltyReportScreen>
     });
   }
 
-  void _loadData() {
+  Future<void> _loadData() async {
     final studyProvider = context.read<StudyProvider>();
     final penaltyProvider = context.read<PenaltyProvider>();
 
     penaltyProvider.loadStudyGroupPenalties(widget.studyGroupId);
-    penaltyProvider.loadPenaltySummaries(
+    await penaltyProvider.loadPenaltySummaries(
       studyGroupId: widget.studyGroupId,
       members: studyProvider.members,
     );
@@ -75,8 +76,14 @@ class _PenaltyReportScreenState extends State<PenaltyReportScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _MemberSummaryTab(studyGroupId: widget.studyGroupId),
-                _AllPenaltiesTab(studyGroupId: widget.studyGroupId),
+                _MemberSummaryTab(
+                  studyGroupId: widget.studyGroupId,
+                  onRefresh: _loadData,
+                ),
+                _AllPenaltiesTab(
+                  studyGroupId: widget.studyGroupId,
+                  onRefresh: _loadData,
+                ),
               ],
             ),
           ),
@@ -123,8 +130,12 @@ class _PenaltyReportScreenState extends State<PenaltyReportScreen>
 
 class _MemberSummaryTab extends StatelessWidget {
   final String studyGroupId;
+  final Future<void> Function() onRefresh;
 
-  const _MemberSummaryTab({required this.studyGroupId});
+  const _MemberSummaryTab({
+    required this.studyGroupId,
+    required this.onRefresh,
+  });
 
   String _formatCurrency(int amount) {
     final formatter = NumberFormat('#,###');
@@ -140,21 +151,33 @@ class _MemberSummaryTab extends StatelessWidget {
         }
 
         if (penaltyProvider.penaltySummaries.isEmpty) {
-          return const Center(
-            child: Text(
-              '아직 벌금 내역이 없습니다',
-              style: TextStyle(color: AppTheme.textSecondary),
+          return RefreshIndicator(
+            onRefresh: onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: const Center(
+                  child: Text(
+                    '아직 벌금 내역이 없습니다',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+              ),
             ),
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: penaltyProvider.penaltySummaries.length,
-          itemBuilder: (context, index) {
-            final summary = penaltyProvider.penaltySummaries[index];
-            return _MemberSummaryCard(summary: summary);
-          },
+        return RefreshIndicator(
+          onRefresh: onRefresh,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: penaltyProvider.penaltySummaries.length,
+            itemBuilder: (context, index) {
+              final summary = penaltyProvider.penaltySummaries[index];
+              return _MemberSummaryCard(summary: summary);
+            },
+          ),
         );
       },
     );
@@ -337,40 +360,61 @@ class _PenaltyItem extends StatelessWidget {
 
 class _AllPenaltiesTab extends StatelessWidget {
   final String studyGroupId;
+  final Future<void> Function() onRefresh;
 
-  const _AllPenaltiesTab({required this.studyGroupId});
+  const _AllPenaltiesTab({
+    required this.studyGroupId,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<PenaltyProvider, StudyProvider>(
-      builder: (context, penaltyProvider, studyProvider, child) {
+    return Consumer3<PenaltyProvider, StudyProvider, AuthProvider>(
+      builder: (context, penaltyProvider, studyProvider, authProvider, child) {
         if (penaltyProvider.penalties.isEmpty) {
-          return const Center(
-            child: Text(
-              '아직 벌금 내역이 없습니다',
-              style: TextStyle(color: AppTheme.textSecondary),
+          return RefreshIndicator(
+            onRefresh: onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: const Center(
+                  child: Text(
+                    '아직 벌금 내역이 없습니다',
+                    style: TextStyle(color: AppTheme.textSecondary),
+                  ),
+                ),
+              ),
             ),
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: penaltyProvider.penalties.length,
-          itemBuilder: (context, index) {
-            final penalty = penaltyProvider.penalties[index];
-            final member = studyProvider.members.firstWhere(
-              (m) => m.id == penalty.userId,
-              orElse: () => studyProvider.members.first,
-            );
+        final study = studyProvider.selectedStudyGroup;
+        final currentUserId = authProvider.user?.id;
+        final isAdmin = study != null && currentUserId != null && study.isAdmin(currentUserId);
 
-            return _PenaltyListItem(
-              penalty: penalty,
-              memberName: member.displayName,
-              onMarkPaid: () {
-                penaltyProvider.markAsPaid(penalty.id);
-              },
-            );
-          },
+        return RefreshIndicator(
+          onRefresh: onRefresh,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: penaltyProvider.penalties.length,
+            itemBuilder: (context, index) {
+              final penalty = penaltyProvider.penalties[index];
+              final member = studyProvider.members.firstWhere(
+                (m) => m.id == penalty.userId,
+                orElse: () => studyProvider.members.first,
+              );
+
+              return _PenaltyListItem(
+                penalty: penalty,
+                memberName: member.displayName,
+                isAdmin: isAdmin,
+                onMarkPaid: () {
+                  penaltyProvider.markAsPaid(penalty.id);
+                },
+              );
+            },
+          ),
         );
       },
     );
@@ -380,11 +424,13 @@ class _AllPenaltiesTab extends StatelessWidget {
 class _PenaltyListItem extends StatelessWidget {
   final PenaltyModel penalty;
   final String memberName;
+  final bool isAdmin;
   final VoidCallback onMarkPaid;
 
   const _PenaltyListItem({
     required this.penalty,
     required this.memberName,
+    required this.isAdmin,
     required this.onMarkPaid,
   });
 
@@ -432,7 +478,7 @@ class _PenaltyListItem extends StatelessWidget {
                 decoration: penalty.isPaid ? TextDecoration.lineThrough : null,
               ),
             ),
-            if (!penalty.isPaid) ...[
+            if (!penalty.isPaid && isAdmin) ...[
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.check_circle_outline),
