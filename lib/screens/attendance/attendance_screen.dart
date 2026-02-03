@@ -101,19 +101,28 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('출석이 마감되었습니다. 출석 기록이 저장되었습니다.'),
+            content: Text('출석이 마감되었습니다. 잠시 후 기록이 업데이트됩니다.'),
             backgroundColor: AppTheme.successColor,
           ),
         );
-        // 출석 기록 새로고침
-        final authProvider = context.read<AuthProvider>();
-        if (authProvider.user != null) {
-          context.read<AttendanceProvider>().loadUserAttendance(
-            studyGroupId: widget.studyGroupId,
-            userId: authProvider.user!.id,
-          );
+        // Firestore 데이터 전파를 위해 잠시 대기 후 새로고침
+        await Future.delayed(const Duration(milliseconds: 1500));
+        if (mounted) {
+          await _refreshData();
         }
       }
+    }
+  }
+
+  Future<void> _refreshData() async {
+    final authProvider = context.read<AuthProvider>();
+    final attendanceProvider = context.read<AttendanceProvider>();
+
+    if (authProvider.user != null) {
+      attendanceProvider.loadUserAttendance(
+        studyGroupId: widget.studyGroupId,
+        userId: authProvider.user!.id,
+      );
     }
   }
 
@@ -321,9 +330,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           return Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
+                child: RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // 오늘 날짜
@@ -459,6 +471,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         }),
                     ],
                   ),
+                ),
                 ),
               ),
               const BannerAdWidget(),

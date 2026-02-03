@@ -7,6 +7,7 @@ class AttendanceSession {
   final String sessionId;
   final DateTime startedAt;
   final DateTime endsAt;
+  final DateTime? finishedAt; // 실제 마감 시간 (조기 마감 시 사용)
   final String verificationWord;
   final int lateThresholdSeconds; // 정시 출석 임계 (초)
   final int lateGracePeriodMinutes; // 출석 마감 후 지각 허용 시간 (분)
@@ -18,6 +19,7 @@ class AttendanceSession {
     required this.sessionId,
     required this.startedAt,
     required this.endsAt,
+    this.finishedAt,
     required this.verificationWord,
     this.lateThresholdSeconds = 300, // 기본 5분
     this.lateGracePeriodMinutes = 10, // 기본 10분 지각 유예
@@ -31,6 +33,7 @@ class AttendanceSession {
       sessionId: map['sessionId'] ?? '',
       startedAt: (map['startedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       endsAt: (map['endsAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      finishedAt: (map['finishedAt'] as Timestamp?)?.toDate(),
       verificationWord: map['verificationWord'] ?? '',
       lateThresholdSeconds: map['lateThresholdSeconds'] ?? 300,
       lateGracePeriodMinutes: map['lateGracePeriodMinutes'] ?? 10,
@@ -45,6 +48,7 @@ class AttendanceSession {
       'sessionId': sessionId,
       'startedAt': Timestamp.fromDate(startedAt),
       'endsAt': Timestamp.fromDate(endsAt),
+      'finishedAt': finishedAt != null ? Timestamp.fromDate(finishedAt!) : null,
       'verificationWord': verificationWord,
       'lateThresholdSeconds': lateThresholdSeconds,
       'lateGracePeriodMinutes': lateGracePeriodMinutes,
@@ -57,15 +61,18 @@ class AttendanceSession {
   bool get isActive => DateTime.now().isBefore(endsAt);
   bool get isLateNow => DateTime.now().isAfter(startedAt.add(Duration(seconds: lateThresholdSeconds)));
 
+  // 실제 마감 시간 (finishedAt이 있으면 사용, 없으면 endsAt 사용)
+  DateTime get effectiveEndTime => finishedAt ?? endsAt;
+
   // 지각 유예 기간 내인지 확인 (마감 후 ~ 마감 + 지각유예시간)
   bool get isInLateGracePeriod {
     final now = DateTime.now();
-    final gracePeriodEnd = endsAt.add(Duration(minutes: lateGracePeriodMinutes));
-    return now.isAfter(endsAt) && now.isBefore(gracePeriodEnd);
+    final gracePeriodEnd = effectiveEndTime.add(Duration(minutes: lateGracePeriodMinutes));
+    return now.isAfter(effectiveEndTime) && now.isBefore(gracePeriodEnd);
   }
 
   // 지각 유예 기간 종료 시간
-  DateTime get lateGracePeriodEndsAt => endsAt.add(Duration(minutes: lateGracePeriodMinutes));
+  DateTime get lateGracePeriodEndsAt => effectiveEndTime.add(Duration(minutes: lateGracePeriodMinutes));
 
   // 랜덤 한글 단어 생성 (3-4글자)
   static String generateVerificationWord() {

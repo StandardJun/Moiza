@@ -377,9 +377,14 @@ class StudyService {
     }
 
     // 세션 정보를 finishedAttendanceSession으로 이동 (지각 체크인용)
+    // finishedAt을 현재 시간으로 설정하여 조기 마감 시에도 지각 유예 기간이 올바르게 계산되도록 함
+    final finishedSession = {
+      ...session.toMap(),
+      'finishedAt': Timestamp.fromDate(now),
+    };
     batch.update(doc.reference, {
       'activeAttendanceSession': FieldValue.delete(),
-      'lastFinishedSession': session.toMap(),
+      'lastFinishedSession': finishedSession,
     });
 
     await batch.commit();

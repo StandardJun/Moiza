@@ -64,7 +64,7 @@ class _PenaltyReportScreenState extends State<PenaltyReportScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: '멤버별 정산'),
+            Tab(text: '멤버별 정산 현황'),
             Tab(text: '전체 내역'),
           ],
         ),
