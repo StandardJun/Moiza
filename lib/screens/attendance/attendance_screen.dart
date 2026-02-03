@@ -23,7 +23,9 @@ class AttendanceScreen extends StatefulWidget {
 class _AttendanceScreenState extends State<AttendanceScreen> {
   final AdService _adService = AdService();
   final _wordController = TextEditingController();
+  final _lateGraceController = TextEditingController();
   int _selectedDuration = 5; // 기본 5분
+  bool _saveAsDefault = false;
   Timer? _refreshTimer;
 
   @override
@@ -32,12 +34,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = context.read<AuthProvider>();
       final attendanceProvider = context.read<AttendanceProvider>();
+      final studyProvider = context.read<StudyProvider>();
 
       if (authProvider.user != null) {
         attendanceProvider.loadUserAttendance(
           studyGroupId: widget.studyGroupId,
           userId: authProvider.user!.id,
         );
+      }
+
+      // 기본 지각 유예 시간 로드
+      final study = studyProvider.selectedStudyGroup;
+      if (study != null) {
+        _lateGraceController.text = study.penaltyRule.lateGracePeriodMinutes.toString();
       }
     });
 
@@ -50,6 +59,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   @override
   void dispose() {
     _wordController.dispose();
+    _lateGraceController.dispose();
     _refreshTimer?.cancel();
     super.dispose();
   }
@@ -60,10 +70,26 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     if (authProvider.user == null) return;
 
+    final lateGraceMinutes = int.tryParse(_lateGraceController.text) ?? 10;
+
+    // 기본값으로 저장 옵션이 선택된 경우
+    if (_saveAsDefault) {
+      final study = studyProvider.selectedStudyGroup;
+      if (study != null && study.penaltyRule.lateGracePeriodMinutes != lateGraceMinutes) {
+        await studyProvider.updatePenaltyRule(
+          studyGroupId: widget.studyGroupId,
+          modifiedBy: authProvider.user!.id,
+          oldRule: study.penaltyRule,
+          newRule: study.penaltyRule.copyWith(lateGracePeriodMinutes: lateGraceMinutes),
+        );
+      }
+    }
+
     final session = await studyProvider.startAttendanceSession(
       studyGroupId: widget.studyGroupId,
       startedBy: authProvider.user!.id,
       durationMinutes: _selectedDuration,
+      lateGracePeriodMinutes: lateGraceMinutes,
     );
 
     if (session != null && mounted) {
@@ -417,6 +443,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 onDurationChanged: (value) {
                                   setState(() => _selectedDuration = value);
                                 },
+                                lateGraceController: _lateGraceController,
+                                saveAsDefault: _saveAsDefault,
+                                onSaveAsDefaultChanged: (value) {
+                                  setState(() => _saveAsDefault = value);
+                                },
                                 isLoading: studyProvider.isLoading,
                                 onStart: _startAttendanceSession,
                               );
@@ -695,12 +726,18 @@ class _CheckInCard extends StatelessWidget {
 class _StartSessionCard extends StatelessWidget {
   final int selectedDuration;
   final ValueChanged<int> onDurationChanged;
+  final TextEditingController lateGraceController;
+  final bool saveAsDefault;
+  final ValueChanged<bool> onSaveAsDefaultChanged;
   final bool isLoading;
   final VoidCallback onStart;
 
   const _StartSessionCard({
     required this.selectedDuration,
     required this.onDurationChanged,
+    required this.lateGraceController,
+    required this.saveAsDefault,
+    required this.onSaveAsDefaultChanged,
     required this.isLoading,
     required this.onStart,
   });
@@ -755,7 +792,44 @@ class _StartSessionCard extends StatelessWidget {
                 onDurationChanged(selected.first);
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            // 지각 인정 시간 설정
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: lateGraceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: '지각 인정 시간',
+                      suffixText: '분',
+                      helperText: '출석 마감 후 지각 체크인 허용 시간',
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // 기본값 저장 체크박스
+            Row(
+              children: [
+                Checkbox(
+                  value: saveAsDefault,
+                  onChanged: (value) => onSaveAsDefaultChanged(value ?? false),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                ),
+                const Text(
+                  '이 시간을 기본으로 사용',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

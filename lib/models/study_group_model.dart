@@ -31,6 +31,20 @@ class PenaltyRule {
       'lateGracePeriodMinutes': lateGracePeriodMinutes,
     };
   }
+
+  PenaltyRule copyWith({
+    int? latePenalty,
+    int? absentPenalty,
+    int? taskNotDonePenalty,
+    int? lateGracePeriodMinutes,
+  }) {
+    return PenaltyRule(
+      latePenalty: latePenalty ?? this.latePenalty,
+      absentPenalty: absentPenalty ?? this.absentPenalty,
+      taskNotDonePenalty: taskNotDonePenalty ?? this.taskNotDonePenalty,
+      lateGracePeriodMinutes: lateGracePeriodMinutes ?? this.lateGracePeriodMinutes,
+    );
+  }
 }
 
 // 벌금 규칙 수정 로그

@@ -252,8 +252,9 @@ class StudyService {
     required String startedBy,
     required int durationMinutes,
     int lateThresholdSeconds = 300,
+    int? lateGracePeriodMinutes,
   }) async {
-    // 스터디 그룹에서 지각 유예 시간 가져오기
+    // 스터디 그룹에서 기본 지각 유예 시간 가져오기 (파라미터가 없을 경우 사용)
     final studyDoc = await _firestore
         .collection(AppConstants.studyGroupsCollection)
         .doc(studyGroupId)
@@ -262,7 +263,7 @@ class StudyService {
     if (!studyDoc.exists) throw '모임을 찾을 수 없습니다.';
 
     final study = StudyGroupModel.fromFirestore(studyDoc);
-    final lateGracePeriodMinutes = study.penaltyRule.lateGracePeriodMinutes;
+    final effectiveLateGracePeriod = lateGracePeriodMinutes ?? study.penaltyRule.lateGracePeriodMinutes;
 
     final now = DateTime.now();
     final session = AttendanceSession(
@@ -271,7 +272,7 @@ class StudyService {
       endsAt: now.add(Duration(minutes: durationMinutes)),
       verificationWord: AttendanceSession.generateVerificationWord(),
       lateThresholdSeconds: lateThresholdSeconds,
-      lateGracePeriodMinutes: lateGracePeriodMinutes,
+      lateGracePeriodMinutes: effectiveLateGracePeriod,
       startedBy: startedBy,
       checkedInUsers: [startedBy], // 시작한 사람 자동 출석
       userStatuses: {startedBy: AttendanceStatus.present}, // 시작한 사람은 정시 출석

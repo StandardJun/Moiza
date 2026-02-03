@@ -254,6 +254,7 @@ class StudyProvider extends ChangeNotifier {
     required String startedBy,
     required int durationMinutes,
     int lateThresholdSeconds = 300,
+    int? lateGracePeriodMinutes,
   }) async {
     _isLoading = true;
     _error = null;
@@ -265,6 +266,7 @@ class StudyProvider extends ChangeNotifier {
         startedBy: startedBy,
         durationMinutes: durationMinutes,
         lateThresholdSeconds: lateThresholdSeconds,
+        lateGracePeriodMinutes: lateGracePeriodMinutes,
       );
       _isLoading = false;
       notifyListeners();
