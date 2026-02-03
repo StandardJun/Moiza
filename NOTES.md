@@ -86,6 +86,21 @@
 - 에러 메시지, 앱 설명, manifest.json, index.html 등 전체 업데이트
 - Cloudflare Pages 빌드 에러 수정 (spread operator 내 final 선언 문제)
 
+### 10. UI/UX 개선 ✅ (2026-02-03)
+- **전문적/비즈니스 스타일 디자인 적용**
+  - 새로운 테마 시스템 (색상, 타이포그래피, 간격, 그림자)
+  - 로그인, 회원가입, 홈, 모임 참여 화면 개선
+- **Tab 키 순서 문제 수정**
+  - 회원가입 화면에서 Tab 키로 필드 이동 시 올바른 순서로 이동
+  - FocusNode + textInputAction 사용
+- **지각 체크인 버그 수정**
+  - `finishedAt` 필드 추가하여 조기 마감 시에도 지각 유예 기간 정상 작동
+- **출석 마감 후 데이터 반영 개선**
+  - 마감 후 1.5초 대기 후 자동 새로고침
+  - Pull-to-refresh 기능 추가
+- **텍스트 수정**
+  - `멤버별 정산` → `멤버별 정산 현황`
+
 ---
 
 ## 프로젝트 구조
@@ -127,9 +142,11 @@ lib/
 
 ### AttendanceSession
 - `lateGracePeriodMinutes`: 지각 유예 시간 (분)
+- `finishedAt`: 실제 마감 시간 (조기 마감 시 사용)
 - `userStatuses`: 사용자별 출석 상태 (present/late)
-- `isInLateGracePeriod`: 지각 유예 기간 내인지 확인
+- `isInLateGracePeriod`: 지각 유예 기간 내인지 확인 (finishedAt 기준)
 - `lateGracePeriodEndsAt`: 지각 유예 기간 종료 시간
+- `effectiveEndTime`: 실제 종료 시간 (finishedAt ?? endsAt)
 
 ### AttendanceModel
 - `sessionId`: 출석 세션 ID (추가)
@@ -159,6 +176,11 @@ lib/
 ### 보안 및 커스터마이징
 - [ ] Firestore 보안 규칙 강화
 - [ ] 앱 아이콘/스플래시 커스터마이징
+
+### 알려진 제한사항
+- **웹 한글 입력 깨짐**: Flutter Web의 IME 처리 한계로 한글 조합 중 깨짐 현상 발생
+  - 모바일 네이티브 앱에서는 정상 동작
+  - 웹은 Flutter 프레임워크 업데이트로 해결 예정
 
 ---
 
