@@ -240,22 +240,24 @@ class _StudyDetailScreenState extends State<StudyDetailScreen> {
                               color: AppTheme.textPrimary,
                             ),
                           ),
-                          if (study.isAdmin(context.read<AuthProvider>().user?.id ?? ''))
-                            Row(
-                              children: [
-                                if (study.penaltyRuleLogs.isNotEmpty)
-                                  IconButton(
-                                    icon: const Icon(Icons.history, size: 20),
-                                    onPressed: () => _showPenaltyRuleLogs(study),
-                                    tooltip: '수정 내역',
-                                  ),
+                          Row(
+                            children: [
+                              // 수정 내역은 모든 멤버가 볼 수 있음
+                              if (study.penaltyRuleLogs.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.history, size: 20),
+                                  onPressed: () => _showPenaltyRuleLogs(study),
+                                  tooltip: '수정 내역',
+                                ),
+                              // 규칙 수정은 관리자/방장만 가능
+                              if (study.isAdmin(context.read<AuthProvider>().user?.id ?? ''))
                                 IconButton(
                                   icon: const Icon(Icons.edit, size: 20),
                                   onPressed: () => _showEditPenaltyRule(study),
                                   tooltip: '규칙 수정',
                                 ),
-                              ],
-                            ),
+                            ],
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),

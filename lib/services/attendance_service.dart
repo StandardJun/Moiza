@@ -134,6 +134,45 @@ class AttendanceService {
             .toList());
   }
 
+  // 출석 상태 수동 변경 (관리자/방장 전용)
+  Future<void> updateAttendanceStatus({
+    required String attendanceId,
+    required String studyGroupId,
+    required String userId,
+    required String oldStatus,
+    required String newStatus,
+    required DateTime date,
+  }) async {
+    // 출석 기록 상태 업데이트
+    await _firestore
+        .collection(AppConstants.attendancesCollection)
+        .doc(attendanceId)
+        .update({'status': newStatus});
+
+    // 기존 벌금 삭제 (해당 날짜, 사용자, 출석 관련 벌금)
+    final oldPenalties = await _firestore
+        .collection(AppConstants.penaltiesCollection)
+        .where('studyGroupId', isEqualTo: studyGroupId)
+        .where('userId', isEqualTo: userId)
+        .where('date', isEqualTo: Timestamp.fromDate(date))
+        .where('type', whereIn: [PenaltyType.late, PenaltyType.absent])
+        .get();
+
+    for (final doc in oldPenalties.docs) {
+      await doc.reference.delete();
+    }
+
+    // 새 상태에 따라 벌금 생성
+    if (newStatus == AttendanceStatus.late || newStatus == AttendanceStatus.absent) {
+      await _createPenaltyForAttendance(
+        studyGroupId: studyGroupId,
+        userId: userId,
+        status: newStatus,
+        date: date,
+      );
+    }
+  }
+
   // 오늘 출석 여부 확인
   Future<bool> hasCheckedInToday({
     required String studyGroupId,

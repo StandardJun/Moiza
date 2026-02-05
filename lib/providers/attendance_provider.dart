@@ -87,6 +87,39 @@ class AttendanceProvider extends ChangeNotifier {
     );
   }
 
+  // 출석 상태 수동 변경 (관리자/방장 전용)
+  Future<bool> updateAttendanceStatus({
+    required String attendanceId,
+    required String studyGroupId,
+    required String userId,
+    required String oldStatus,
+    required String newStatus,
+    required DateTime date,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _attendanceService.updateAttendanceStatus(
+        attendanceId: attendanceId,
+        studyGroupId: studyGroupId,
+        userId: userId,
+        oldStatus: oldStatus,
+        newStatus: newStatus,
+        date: date,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

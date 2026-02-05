@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:moiza/config/theme.dart';
+import 'package:moiza/config/constants.dart';
 import 'package:moiza/providers/auth_provider.dart';
 import 'package:moiza/providers/study_provider.dart';
 import 'package:moiza/providers/penalty_provider.dart';
+import 'package:moiza/providers/attendance_provider.dart';
 import 'package:moiza/models/penalty_model.dart';
+import 'package:moiza/models/attendance_model.dart';
 import 'package:moiza/services/penalty_service.dart';
 import 'package:moiza/widgets/common/loading_widget.dart';
 import 'package:intl/intl.dart';
@@ -406,10 +409,12 @@ class _AllPenaltiesTab extends StatelessWidget {
               return _PenaltyListItem(
                 penalty: penalty,
                 memberName: member.displayName,
+                studyGroupId: studyGroupId,
                 isAdmin: isAdmin,
                 onMarkPaid: () {
                   penaltyProvider.markAsPaid(penalty.id);
                 },
+                onRefresh: onRefresh,
               );
             },
           ),
@@ -422,14 +427,18 @@ class _AllPenaltiesTab extends StatelessWidget {
 class _PenaltyListItem extends StatelessWidget {
   final PenaltyModel penalty;
   final String memberName;
+  final String studyGroupId;
   final bool isAdmin;
   final VoidCallback onMarkPaid;
+  final Future<void> Function() onRefresh;
 
   const _PenaltyListItem({
     required this.penalty,
     required this.memberName,
+    required this.studyGroupId,
     required this.isAdmin,
     required this.onMarkPaid,
+    required this.onRefresh,
   });
 
   String _formatCurrency(int amount) {
@@ -437,8 +446,109 @@ class _PenaltyListItem extends StatelessWidget {
     return '${formatter.format(amount)}원';
   }
 
+  void _showChangeStatusDialog(BuildContext context) {
+    final isLateOrAbsent = penalty.type == PenaltyType.late || penalty.type == PenaltyType.absent;
+    if (!isLateOrAbsent) return;
+
+    final currentStatus = penalty.type == PenaltyType.late
+        ? AttendanceStatus.late
+        : AttendanceStatus.absent;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('출석 상태 변경'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('$memberName님의 ${DateFormat('M월 d일').format(penalty.date)} 출석 상태를 변경합니다.'),
+            const SizedBox(height: 16),
+            Text('현재 상태: ${penalty.typeDisplayName}', style: const TextStyle(color: AppTheme.textSecondary)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          if (currentStatus != AttendanceStatus.present)
+            TextButton(
+              onPressed: () => _changeStatus(context, currentStatus, AttendanceStatus.present),
+              child: const Text('출석으로 변경', style: TextStyle(color: AppTheme.successColor)),
+            ),
+          if (currentStatus != AttendanceStatus.late)
+            TextButton(
+              onPressed: () => _changeStatus(context, currentStatus, AttendanceStatus.late),
+              child: const Text('지각으로 변경', style: TextStyle(color: AppTheme.warningColor)),
+            ),
+          if (currentStatus != AttendanceStatus.absent)
+            TextButton(
+              onPressed: () => _changeStatus(context, currentStatus, AttendanceStatus.absent),
+              child: const Text('결석으로 변경', style: TextStyle(color: AppTheme.errorColor)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _changeStatus(BuildContext context, String oldStatus, String newStatus) async {
+    Navigator.pop(context);
+
+    // 출석 기록 찾기
+    final attendanceProvider = context.read<AttendanceProvider>();
+    final attendances = await attendanceProvider.getAttendanceByDate(
+      studyGroupId: studyGroupId,
+      date: penalty.date,
+    );
+
+    final attendance = attendances.where((a) => a.userId == penalty.userId).firstOrNull;
+
+    if (attendance == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('출석 기록을 찾을 수 없습니다'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+      return;
+    }
+
+    final success = await attendanceProvider.updateAttendanceStatus(
+      attendanceId: attendance.id,
+      studyGroupId: studyGroupId,
+      userId: penalty.userId,
+      oldStatus: oldStatus,
+      newStatus: newStatus,
+      date: penalty.date,
+    );
+
+    if (context.mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('출석 상태가 변경되었습니다'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        await onRefresh();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('출석 상태 변경에 실패했습니다'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isLateOrAbsent = penalty.type == PenaltyType.late || penalty.type == PenaltyType.absent;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -476,14 +586,26 @@ class _PenaltyListItem extends StatelessWidget {
                 decoration: penalty.isPaid ? TextDecoration.lineThrough : null,
               ),
             ),
-            if (!penalty.isPaid && isAdmin) ...[
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.check_circle_outline),
-                color: AppTheme.successColor,
-                onPressed: onMarkPaid,
-                tooltip: '납부 처리',
-              ),
+            if (isAdmin) ...[
+              // 출석 상태 변경 버튼 (지각/결석 벌금에만 표시)
+              if (isLateOrAbsent && !penalty.isPaid) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  color: AppTheme.primaryColor,
+                  onPressed: () => _showChangeStatusDialog(context),
+                  tooltip: '출석 상태 변경',
+                ),
+              ],
+              // 납부 처리 버튼
+              if (!penalty.isPaid) ...[
+                IconButton(
+                  icon: const Icon(Icons.check_circle_outline),
+                  color: AppTheme.successColor,
+                  onPressed: onMarkPaid,
+                  tooltip: '납부 처리',
+                ),
+              ],
             ],
           ],
         ),
