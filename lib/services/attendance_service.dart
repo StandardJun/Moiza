@@ -123,15 +123,20 @@ class AttendanceService {
     required String studyGroupId,
     required String userId,
   }) {
+    // 복합 인덱스 없이도 작동하도록 orderBy 제거 후 클라이언트에서 정렬
     return _firestore
         .collection(AppConstants.attendancesCollection)
         .where('studyGroupId', isEqualTo: studyGroupId)
         .where('userId', isEqualTo: userId)
-        .orderBy('date', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AttendanceModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => AttendanceModel.fromFirestore(doc))
+              .toList();
+          // 날짜 기준 내림차순 정렬 (최신순)
+          list.sort((a, b) => b.date.compareTo(a.date));
+          return list;
+        });
   }
 
   // 출석 상태 수동 변경 (관리자/방장 전용)
